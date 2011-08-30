@@ -4,7 +4,7 @@
 
 Name:             openstack-nova
 Version:          2011.3
-Release:          0.4.%{milestone}%{?dist}
+Release:          0.5.%{milestone}%{?dist}
 Summary:          OpenStack Compute (nova)
 
 Group:            Applications/System
@@ -14,15 +14,15 @@ Source0:          http://launchpad.net/nova/diablo/diablo-4/+download/nova-%{ver
 Source1:          nova.conf
 Source6:          nova.logrotate
 
-Source11:         openstack-nova-api.init
-Source12:         openstack-nova-compute.init
-Source13:         openstack-nova-network.init
-Source14:         openstack-nova-objectstore.init
-Source15:         openstack-nova-scheduler.init
-Source16:         openstack-nova-volume.init
-Source17:         openstack-nova-direct-api.init
-Source18:         openstack-nova-ajax-console-proxy.init
-Source19:         openstack-nova-vncproxy.init
+Source11:         openstack-nova-api.service
+Source12:         openstack-nova-compute.service
+Source13:         openstack-nova-network.service
+Source14:         openstack-nova-objectstore.service
+Source15:         openstack-nova-scheduler.service
+Source16:         openstack-nova-volume.service
+Source17:         openstack-nova-direct-api.service
+Source18:         openstack-nova-ajax-console-proxy.service
+Source19:         openstack-nova-vncproxy.service
 
 Source20:         nova-sudoers
 Source21:         nova-polkit.pkla
@@ -56,9 +56,9 @@ Requires:         openssl
 Requires:         rabbitmq-server
 Requires:         sudo
 
-Requires(post):   chkconfig
-Requires(postun): initscripts
-Requires(preun):  chkconfig
+Requires(post):   systemd-units
+Requires(preun):  systemd-units
+Requires(postun): systemd-units
 Requires(pre):    shadow-utils qemu-kvm
 
 %description
@@ -127,6 +127,7 @@ Group:            Documentation
 
 Requires:         %{name} = %{version}-%{release}
 
+BuildRequires:    systemd-units
 BuildRequires:    python-sphinx
 BuildRequires:    graphviz
 
@@ -214,15 +215,15 @@ install -d -m 755 %{buildroot}%{_sysconfdir}/nova
 install -p -D -m 640 %{SOURCE1} %{buildroot}%{_sysconfdir}/nova/nova.conf
 
 # Install initscripts for Nova services
-install -p -D -m 755 %{SOURCE11} %{buildroot}%{_initrddir}/openstack-nova-api
-install -p -D -m 755 %{SOURCE12} %{buildroot}%{_initrddir}/openstack-nova-compute
-install -p -D -m 755 %{SOURCE13} %{buildroot}%{_initrddir}/openstack-nova-network
-install -p -D -m 755 %{SOURCE14} %{buildroot}%{_initrddir}/openstack-nova-objectstore
-install -p -D -m 755 %{SOURCE15} %{buildroot}%{_initrddir}/openstack-nova-scheduler
-install -p -D -m 755 %{SOURCE16} %{buildroot}%{_initrddir}/openstack-nova-volume
-install -p -D -m 755 %{SOURCE17} %{buildroot}%{_initrddir}/openstack-nova-direct-api
-install -p -D -m 755 %{SOURCE18} %{buildroot}%{_initrddir}/openstack-nova-ajax-console-proxy
-install -p -D -m 755 %{SOURCE19} %{buildroot}%{_initrddir}/openstack-nova-vncproxy
+install -p -D -m 755 %{SOURCE11} %{buildroot}%{_unitdir}/openstack-nova-api.service
+install -p -D -m 755 %{SOURCE12} %{buildroot}%{_unitdir}/openstack-nova-compute.service
+install -p -D -m 755 %{SOURCE13} %{buildroot}%{_unitdir}/openstack-nova-network.service
+install -p -D -m 755 %{SOURCE14} %{buildroot}%{_unitdir}/openstack-nova-objectstore.service
+install -p -D -m 755 %{SOURCE15} %{buildroot}%{_unitdir}/openstack-nova-scheduler.service
+install -p -D -m 755 %{SOURCE16} %{buildroot}%{_unitdir}/openstack-nova-volume.service
+install -p -D -m 755 %{SOURCE17} %{buildroot}%{_unitdir}/openstack-nova-direct-api.service
+install -p -D -m 755 %{SOURCE18} %{buildroot}%{_unitdir}/openstack-nova-ajax-console-proxy.service
+install -p -D -m 755 %{SOURCE19} %{buildroot}%{_unitdir}/openstack-nova-vncproxy.service
 
 # Install sudoers
 install -p -D -m 440 %{SOURCE20} %{buildroot}%{_sysconfdir}/sudoers.d/nova
@@ -264,24 +265,26 @@ if [ ! -f %{_sharedstatedir}/nova/nova.sqlite ]; then
     runuser -l -s /bin/bash -c 'nova-manage --flagfile=/dev/null --logdir=%{_localstatedir}/log/nova --state_path=%{_sharedstatedir}/nova db sync' nova
     chmod 600 %{_sharedstatedir}/nova/nova.sqlite
 fi
+if [ $1 -eq 1 ] ; then
+    # Initial installation
+    /bin/systemctl daemon-reload >/dev/null 2>&1 || :
+fi
 
-# Register the services
-for svc in api compute network objectstore scheduler volume direct-api ajax-console-proxy vncproxy; do
-    /sbin/chkconfig --add openstack-nova-${svc}
-done
 
 %preun
 if [ $1 -eq 0 ] ; then
     for svc in api compute network objectstore scheduler volume direct-api ajax-console-proxy vncproxy; do
-        /sbin/service openstack-nova-${svc} stop >/dev/null 2>&1
-        /sbin/chkconfig --del openstack-nova-${svc}
+        /bin/systemctl --no-reload disable openstack-nova-${svc}.service > /dev/null 2>&1 || :
+        /bin/systemctl stop openstack-nova-${svc}.service > /dev/null 2>&1 || :
     done
 fi
 
 %postun
-if [ "$1" -ge 1 ] ; then
+/bin/systemctl daemon-reload >/dev/null 2>&1 || :
+if [ $1 -ge 1 ] ; then
+    # Package upgrade, not uninstall
     for svc in api compute network objectstore scheduler volume direct-api ajax-console-proxy vncproxy; do
-        /sbin/service openstack-nova-${svc} condrestart > /dev/null 2>&1 || :
+        /bin/systemctl try-restart openstack-nova-${svc}.service >/dev/null 2>&1 || :
     done
 fi
 
@@ -298,7 +301,7 @@ fi
 %dir %attr(0755, nova, root) %{_localstatedir}/run/nova
 
 %{_bindir}/nova-*
-%{_initrddir}/openstack-nova-*
+%{_unitdir}/openstack-nova-*.service
 %{_datarootdir}/nova
 
 %defattr(-, nova, nova, -)
@@ -339,6 +342,9 @@ fi
 %endif
 
 %changelog
+* Tue Aug 30 2011 Angus Salkeld <asalkeld@redhat.com> - 2011.3-0.5.s4
+- Switch from SysV init scripts to systemd units (#734345)
+
 * Mon Aug 29 2011 Mark McLoughlin <markmc@redhat.com> - 2011.3-0.4.d4
 - Don't generate root CA during %post (#707199)
 - The nobody group shouldn't own files in /var/lib/nova
