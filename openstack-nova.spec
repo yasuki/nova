@@ -4,7 +4,7 @@
 
 Name:             openstack-nova
 Version:          2011.3
-Release:          0.5.%{milestone}%{?dist}
+Release:          0.6.%{milestone}%{?dist}
 Summary:          OpenStack Compute (nova)
 
 Group:            Applications/System
@@ -130,6 +130,7 @@ Requires:         %{name} = %{version}-%{release}
 BuildRequires:    systemd-units
 BuildRequires:    python-sphinx
 BuildRequires:    graphviz
+BuildRequires:    python-distutils-extra
 
 BuildRequires:    python-nose
 # Required to build module documents
@@ -172,16 +173,20 @@ find nova -name \*.py -exec sed -i '/\/usr\/bin\/env python/d' {} \;
 %{__python} setup.py install -O1 --skip-build --root %{buildroot}
 
 # docs generation requires everything to be installed first
-%if 0%{?with_doc}
 export PYTHONPATH="$( pwd ):$PYTHONPATH"
 pushd doc
 # Manually auto-generate to work around sphinx-build segfault
 ./generate_autodoc_index.sh
+SPHINX_DEBUG=1 sphinx-build -b man source build/man
+mkdir -p %{buildroot}%{_mandir}/man1
+install -p -D -m 644 build/man/*.1 %{buildroot}%{_mandir}/man1/
+
+%if 0%{?with_doc}
 SPHINX_DEBUG=1 sphinx-build -b html source build/html
-popd
 # Fix hidden-file-or-dir warnings
-rm -fr doc/build/html/.doctrees doc/build/html/.buildinfo
+rm -fr build/html/.doctrees build/html/.buildinfo
 %endif
+popd
 
 # Give stack, instance-usage-audit and clear_rabbit_queues a reasonable prefix
 mv %{buildroot}%{_bindir}/stack %{buildroot}%{_bindir}/nova-stack
@@ -303,6 +308,7 @@ fi
 %{_bindir}/nova-*
 %{_unitdir}/openstack-nova-*.service
 %{_datarootdir}/nova
+%{_mandir}/man1/nova*.1.gz
 
 %defattr(-, nova, nova, -)
 %dir %{_sharedstatedir}/nova
@@ -342,6 +348,9 @@ fi
 %endif
 
 %changelog
+* Wed Aug 31 2011 Angus Salkeld <asalkeld@redhat.com> - 2011.3-0.6.s4
+- add the one man page provided by nova.
+
 * Tue Aug 30 2011 Angus Salkeld <asalkeld@redhat.com> - 2011.3-0.5.s4
 - Switch from SysV init scripts to systemd units (#734345)
 
