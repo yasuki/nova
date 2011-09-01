@@ -348,10 +348,11 @@ fi
 %endif
 
 %changelog
-* Wed Aug 31 2011 Angus Salkeld <asalkeld@redhat.com> - 2011.3-0.6.s4
-- add the one man page provided by nova.
+* Wed Aug 31 2011 Angus Salkeld <asalkeld@redhat.com> - 2011.3-0.6.d4
+- Add the one man page provided by nova.
+- Start services with --flagfile rather than --flag-file (#735070)
 
-* Tue Aug 30 2011 Angus Salkeld <asalkeld@redhat.com> - 2011.3-0.5.s4
+* Tue Aug 30 2011 Angus Salkeld <asalkeld@redhat.com> - 2011.3-0.5.d4
 - Switch from SysV init scripts to systemd units (#734345)
 
 * Mon Aug 29 2011 Mark McLoughlin <markmc@redhat.com> - 2011.3-0.4.d4
