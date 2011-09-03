@@ -4,7 +4,7 @@
 
 Name:             openstack-nova
 Version:          2011.3
-Release:          0.6.%{milestone}%{?dist}
+Release:          0.7.%{milestone}%{?dist}
 Summary:          OpenStack Compute (nova)
 
 Group:            Applications/System
@@ -31,6 +31,7 @@ Source22:         nova-ifc-template
 Patch1:           nova-fix-flavorid-migration-failure.patch
 Patch2:           nova-fix-quotas-migration-failure.patch
 Patch3:           nova-do-not-require-bridge_interface-for-flatdhcpmanager.patch
+Patch4:           nova-add-filter-rules-for-dnsmasq-dhcp.patch
 
 BuildArch:        noarch
 BuildRequires:    intltool
@@ -161,6 +162,7 @@ This package contains documentation files for nova.
 %patch1 -p1
 %patch2 -p1
 %patch3 -p1
+%patch4 -p1
 
 find . \( -name .gitignore -o -name .placeholder \) -delete
 
@@ -348,6 +350,9 @@ fi
 %endif
 
 %changelog
+* Sat Sep  3 2011 Mark McLoughlin <markmc@redhat.com> - 2011.3-0.7.d4
+- Add iptables rules to allow requests to dnsmasq (#734347)
+
 * Wed Aug 31 2011 Angus Salkeld <asalkeld@redhat.com> - 2011.3-0.6.d4
 - Add the one man page provided by nova.
 - Start services with --flagfile rather than --flag-file (#735070)
