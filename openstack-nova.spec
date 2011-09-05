@@ -4,7 +4,7 @@
 
 Name:             openstack-nova
 Version:          2011.3
-Release:          0.7.%{milestone}%{?dist}
+Release:          0.8.%{milestone}%{?dist}
 Summary:          OpenStack Compute (nova)
 
 Group:            Applications/System
@@ -32,6 +32,7 @@ Patch1:           nova-fix-flavorid-migration-failure.patch
 Patch2:           nova-fix-quotas-migration-failure.patch
 Patch3:           nova-do-not-require-bridge_interface-for-flatdhcpmanager.patch
 Patch4:           nova-add-filter-rules-for-dnsmasq-dhcp.patch
+Patch5:           nova-add-input-chain-rule-for-ec2-metadata-requests.patch
 
 BuildArch:        noarch
 BuildRequires:    intltool
@@ -163,6 +164,7 @@ This package contains documentation files for nova.
 %patch2 -p1
 %patch3 -p1
 %patch4 -p1
+%patch5 -p1
 
 find . \( -name .gitignore -o -name .placeholder \) -delete
 
@@ -350,6 +352,9 @@ fi
 %endif
 
 %changelog
+* Mon Sep  5 2011 Mark McLoughlin <markmc@redhat.com> - 2011.3-0.8.d4
+- Add iptables rule to allow EC2 metadata requests (#734347)
+
 * Sat Sep  3 2011 Mark McLoughlin <markmc@redhat.com> - 2011.3-0.7.d4
 - Add iptables rules to allow requests to dnsmasq (#734347)
 
