@@ -4,7 +4,7 @@
 
 Name:             openstack-nova
 Version:          2011.3
-Release:          0.8.%{milestone}%{?dist}
+Release:          0.9.%{milestone}%{?dist}
 Summary:          OpenStack Compute (nova)
 
 Group:            Applications/System
@@ -113,7 +113,6 @@ Requires:         scsi-target-utils
 Requires:         lvm2
 Requires:         socat
 Requires:         coreutils
-Requires:         python-libguestfs
 
 %description -n   python-nova
 OpenStack Compute (codename Nova) is open source software designed to
@@ -352,6 +351,9 @@ fi
 %endif
 
 %changelog
+* Wed Sep 14 2011 Mark McLoughlin <markmc@redhat.com> - 2011.3-0.9.d4
+- Remove python-libguestfs dependency (#738187)
+
 * Mon Sep  5 2011 Mark McLoughlin <markmc@redhat.com> - 2011.3-0.8.d4
 - Add iptables rule to allow EC2 metadata requests (#734347)
 
