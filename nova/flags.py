@@ -416,9 +416,6 @@ DEFINE_string('root_helper', 'sudo',
 DEFINE_string('network_driver', 'nova.network.linux_net',
               'Driver to use for network creation')
 
-DEFINE_string('iscsi_helper', 'ietadm',
-              'iscsi target user-land tool to use')
-
 DEFINE_bool('use_ipv6', False, 'use ipv6')
 
 DEFINE_bool('monkey_patch', False,
