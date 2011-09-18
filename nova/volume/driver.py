@@ -28,6 +28,7 @@ from nova import exception
 from nova import flags
 from nova import log as logging
 from nova import utils
+from nova.volume import iscsi
 from nova.volume import volume_types
 
 
@@ -63,6 +64,9 @@ class VolumeDriver(object):
     def __init__(self, execute=utils.execute, *args, **kwargs):
         # NOTE(vish): db is set by Manager
         self.db = None
+        self.set_execute(execute)
+
+    def set_execute(self, execute):
         self._execute = execute
 
     def _try_execute(self, *command, **kwargs):
@@ -353,6 +357,14 @@ class ISCSIDriver(VolumeDriver):
                        `CHAP` is the only auth_method in use at the moment.
     """
 
+    def __init__(self, *args, **kwargs):
+        self.tgtadm = iscsi.get_target_admin()
+        super(ISCSIDriver, self).__init__(*args, **kwargs)
+
+    def set_execute(self, execute):
+        super(ISCSIDriver, self).set_execute(execute)
+        self.tgtadm.set_execute(execute)
+
     def ensure_export(self, context, volume):
         """Synchronously recreates an export for a logical volume."""
         try:
@@ -365,40 +377,10 @@ class ISCSIDriver(VolumeDriver):
 
         iscsi_name = "%s%s" % (FLAGS.iscsi_target_prefix, volume['name'])
         volume_path = "/dev/%s/%s" % (FLAGS.volume_group, volume['name'])
-        if FLAGS.iscsi_helper == 'tgtadm':
-            self._execute('%s' % FLAGS.iscsi_helper, '--op', 'new',
-                          '--lld=iscsi', '--mode=target',
-                          "--tid=%s" % iscsi_target,
-                          "--targetname=%s" % iscsi_name,
-                          run_as_root=True,
-                          check_exit_code=False)
-            self._execute('%s' % FLAGS.iscsi_helper, '--op', 'bind'
-                          '--lld=iscsi', '--mode=target',
-                          '--initiator-address=ALL',
-                          "--tid=%s" % iscsi_target,
-                          run_as_root=True,
-                          check_exit_code=False)
-            self._execute('%s' % FLAGS.iscsi_helper, '--op', 'new',
-                          '--lld=iscsi', '--mode=logicalunit',
-                          "--tid=%s" % iscsi_target,
-                          '--lun=1',
-                          "--backing-store=%s,Type=fileio" % volume_path,
-                          run_as_root=True,
-                          check_exit_code=False)
-        else:
-            self._execute('%s' % FLAGS.iscsi_helper, '--op', 'new',
-                          "--tid=%s" % iscsi_target,
-                          '--params',
-                          "Name=%s" % iscsi_name,
-                          run_as_root=True,
-                          check_exit_code=False)
-            self._execute('%s' % FLAGS.iscsi_helper, '--op', 'new',
-                          "--tid=%s" % iscsi_target,
-                          '--lun=0',
-                          '--params',
-                          "Path=%s,Type=fileio" % volume_path,
-                          run_as_root=True,
-                          check_exit_code=False)
+
+        self.tgtadm.new_target(iscsi_name, iscsi_target, check_exit_code=False)
+        self.tgtadm.new_logicalunit(iscsi_target, 0, volume_path,
+                                    check_exit_code=False)
 
     def _ensure_iscsi_targets(self, context, host):
         """Ensure that target ids have been created in datastore."""
@@ -418,33 +400,9 @@ class ISCSIDriver(VolumeDriver):
                                                       volume['host'])
         iscsi_name = "%s%s" % (FLAGS.iscsi_target_prefix, volume['name'])
         volume_path = "/dev/%s/%s" % (FLAGS.volume_group, volume['name'])
-        if FLAGS.iscsi_helper == 'tgtadm':
-            self._execute('%s' % FLAGS.iscsi_helper, '--op', 'new',
-                          '--lld=iscsi', '--mode=target',
-                          '--tid=%s' % iscsi_target,
-                          '--params', 'Name=%s' % iscsi_name,
-                          run_as_root=True)
-            self._execute('%s' % FLAGS.iscsi_helper, '--op', 'bind',
-                          '--lld=iscsi', '--mode=target',
-                          '--initiator-address=ALL',
-                          "--tid=%s" % iscsi_target,
-                          run_as_root=True)
-            self._execute('%s' % FLAGS.iscsi_helper, '--op', 'new',
-                          '--ld=iscsi', '--mode=logicalunit',
-                          '--tid=%s' % iscsi_target,
-                          '--lun=0', '--params',
-                          'Path=%s,Type=fileio' % volume_path,
-                          run_as_root=True)
-        else:
-            self._execute('%s' % FLAGS.iscsi_helper, '--op', 'new',
-                          '--tid=%s' % iscsi_target,
-                          '--params', 'Name=%s' % iscsi_name,
-                          run_as_root=True)
-            self._execute('%s' % FLAGS.iscsi_helper, '--op', 'new',
-                          '--tid=%s' % iscsi_target,
-                          '--lun=0', '--params',
-                          'Path=%s,Type=fileio' % volume_path,
-                          run_as_root=True)
+
+        self.tgtadm.new_target(iscsi_name, iscsi_target)
+        self.tgtadm.new_logicalunit(iscsi_target, 0, volume_path)
 
     def remove_export(self, context, volume):
         """Removes an export for a logical volume."""
@@ -459,38 +417,14 @@ class ISCSIDriver(VolumeDriver):
         try:
             # ietadm show will exit with an error
             # this export has already been removed
-            if FLAGS.iscsi_helper == 'tgtadm':
-                self._execute('%s' % FLAGS.iscsi_helper, '--op', 'show',
-                              '--lld=iscsi', '--mode=target',
-                               '--tid=%s' % iscsi_target,
-                              run_as_root=True)
-            else:
-                self._execute('%s' % FLAGS.iscsi_helper, '--op', 'show',
-                              '--tid=%s' % iscsi_target,
-                              run_as_root=True)
+            self.tgtadm.show_target(iscsi_target)
         except Exception as e:
             LOG.info(_("Skipping remove_export. No iscsi_target " +
                        "is presently exported for volume: %d"), volume['id'])
             return
 
-        if FLAGS.iscsi_helper == 'tgtadm':
-            self._execute('%s' % FLAGS.iscsi_helper, '--op', 'delete',
-                          '--lld=iscsi', '--mode=logicalunit',
-                          '--tid=%s' % iscsi_target,
-                          '--lun=1',
-                          run_as_root=True)
-            self._execute('%s' % FLAGS.iscsi_helper, '--op', 'delete',
-                          '--lld=iscsi', '--mode=target',
-                          '--tid=%s' % iscsi_target,
-                          run_as_root=True)
-        else:
-            self._execute('%s' % FLAGS.iscsi_helper, '--op' 'delete',
-                          '--tid=%s' % iscsi_target,
-                          '--lun=0',
-                          run_as_root=True)
-            self._execute('%s' % FLAGS.iscsi_helper, '--op', 'delete',
-                          '--tid=%s' % iscsi_target,
-                          run_as_root=True)
+        self.tgtadm.delete_logicalunit(iscsi_target, 0)
+        self.tgtadm.delete_target(iscsi_target)
 
     def _do_iscsi_discovery(self, volume):
         #TODO(justinsb): Deprecate discovery and use stored info
@@ -599,14 +533,9 @@ class ISCSIDriver(VolumeDriver):
 
         self._iscsiadm_update(iscsi_properties, "node.startup", "automatic")
 
-        if FLAGS.iscsi_helper == 'tgtadm':
-            mount_device = ("/dev/disk/by-path/ip-%s-iscsi-%s-lun-0" %
-                            (iscsi_properties['target_portal'],
-                            iscsi_properties['target_iqn']))
-        else:
-            mount_device = ("/dev/disk/by-path/ip-%s-iscsi-%s-lun-0" %
-                            (iscsi_properties['target_portal'],
-                             iscsi_properties['target_iqn']))
+        mount_device = ("/dev/disk/by-path/ip-%s-iscsi-%s-lun-0" %
+                        (iscsi_properties['target_portal'],
+                         iscsi_properties['target_iqn']))
 
         # The /dev/disk/by-path/... node is not always present immediately
         # TODO(justinsb): This retry-with-delay is a pattern, move to utils?
@@ -646,15 +575,7 @@ class ISCSIDriver(VolumeDriver):
 
         tid = self.db.volume_get_iscsi_target_num(context, volume_id)
         try:
-            if FLAGS.iscsi_helper == 'tgtadm':
-                self._execute('%s' % FLAGS.iscsi_helper, '--op', 'show'
-                               '--lld=iscsi', '--mode=target',
-                               '--tid=%(tid)d' % locals(),
-                              run_as_root=True)
-            else:
-                self._execute('%s' % FLAGS.iscsi_helper, '--op', 'show',
-                              '--tid=%(tid)d' % locals(),
-                              run_as_root=True)
+            self.tgtadm.show_target(tid)
         except exception.ProcessExecutionError, e:
             # Instances remount read-only in this case.
             # /etc/init.d/iscsitarget restart and rebooting nova-volume
