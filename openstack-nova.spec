@@ -4,7 +4,7 @@
 
 Name:             openstack-nova
 Version:          2011.3
-Release:          0.9.%{milestone}%{?dist}
+Release:          0.10.%{milestone}%{?dist}
 Summary:          OpenStack Compute (nova)
 
 Group:            Applications/System
@@ -33,6 +33,7 @@ Patch2:           nova-fix-quotas-migration-failure.patch
 Patch3:           nova-do-not-require-bridge_interface-for-flatdhcpmanager.patch
 Patch4:           nova-add-filter-rules-for-dnsmasq-dhcp.patch
 Patch5:           nova-add-input-chain-rule-for-ec2-metadata-requests.patch
+Patch6:           nova-iscsi-choice.patch
 
 BuildArch:        noarch
 BuildRequires:    intltool
@@ -164,6 +165,7 @@ This package contains documentation files for nova.
 %patch3 -p1
 %patch4 -p1
 %patch5 -p1
+%patch6 -p1
 
 find . \( -name .gitignore -o -name .placeholder \) -delete
 
@@ -351,6 +353,9 @@ fi
 %endif
 
 %changelog
+* Mon Sep 19 2011 Mark McLoughlin <markmc@redhat.com> - 2011.3-0.10.d4
+- Use tgtadm instead of ietadm (#737046)
+
 * Wed Sep 14 2011 Mark McLoughlin <markmc@redhat.com> - 2011.3-0.9.d4
 - Remove python-libguestfs dependency (#738187)
 
