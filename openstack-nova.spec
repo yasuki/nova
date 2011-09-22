@@ -4,13 +4,13 @@
 
 Name:             openstack-nova
 Version:          2011.3
-Release:          0.10.%{milestone}%{?dist}
+Release:          1%{?dist}
 Summary:          OpenStack Compute (nova)
 
 Group:            Applications/System
 License:          ASL 2.0
 URL:              http://openstack.org/projects/compute/
-Source0:          http://launchpad.net/nova/diablo/diablo-4/+download/nova-%{version}~%{milestone}.tar.gz
+Source0:          http://launchpad.net/nova/diablo/2011.3/+download/nova-%{version}.tar.gz
 Source1:          nova.conf
 Source6:          nova.logrotate
 
@@ -28,12 +28,8 @@ Source20:         nova-sudoers
 Source21:         nova-polkit.pkla
 Source22:         nova-ifc-template
 
-Patch1:           nova-fix-flavorid-migration-failure.patch
-Patch2:           nova-fix-quotas-migration-failure.patch
-Patch3:           nova-do-not-require-bridge_interface-for-flatdhcpmanager.patch
-Patch4:           nova-add-filter-rules-for-dnsmasq-dhcp.patch
-Patch5:           nova-add-input-chain-rule-for-ec2-metadata-requests.patch
-Patch6:           nova-iscsi-choice.patch
+Patch1:           nova-metadata-accept.patch
+Patch2:           nova-iscsi-choice.patch
 
 BuildArch:        noarch
 BuildRequires:    intltool
@@ -86,7 +82,7 @@ Requires:         libvirt-python
 Requires:         python-anyjson
 Requires:         python-IPy
 Requires:         python-boto
-Requires:         python-carrot
+Requires:         python-kombu
 Requires:         python-daemon
 Requires:         python-eventlet
 Requires:         python-greenlet
@@ -162,10 +158,6 @@ This package contains documentation files for nova.
 
 %patch1 -p1
 %patch2 -p1
-%patch3 -p1
-%patch4 -p1
-%patch5 -p1
-%patch6 -p1
 
 find . \( -name .gitignore -o -name .placeholder \) -delete
 
@@ -353,6 +345,12 @@ fi
 %endif
 
 %changelog
+* Thu Sep 22 2011 Mark McLoughlin <markmc@redhat.com> - 2011.3-1
+- Update to Diablo final.
+- Drop some upstreamed patches.
+- Update the metadata-accept patch to what's proposed for essex.
+- Switch rpc impl from carrot to kombu.
+
 * Mon Sep 19 2011 Mark McLoughlin <markmc@redhat.com> - 2011.3-0.10.d4
 - Use tgtadm instead of ietadm (#737046)
 

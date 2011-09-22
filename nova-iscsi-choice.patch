@@ -3,8 +3,8 @@ Backported from:
   https://code.launchpad.net/~markmc/nova/iscsi-tgtadm-choice/+merge/75906
 
 diff -up nova-2011.3/nova/tests/test_iscsi.py.iscsi-choice nova-2011.3/nova/tests/test_iscsi.py
---- nova-2011.3/nova/tests/test_iscsi.py.iscsi-choice	2011-09-18 16:18:31.460605846 +0100
-+++ nova-2011.3/nova/tests/test_iscsi.py	2011-09-18 16:18:31.460605846 +0100
+--- nova-2011.3/nova/tests/test_iscsi.py.iscsi-choice	2011-09-22 14:34:41.670487277 +0100
++++ nova-2011.3/nova/tests/test_iscsi.py	2011-09-22 14:34:41.670487277 +0100
 @@ -0,0 +1,116 @@
 +# vim: tabstop=4 shiftwidth=4 softtabstop=4
 +
@@ -123,8 +123,8 @@ diff -up nova-2011.3/nova/tests/test_iscsi.py.iscsi-choice nova-2011.3/nova/test
 +ietadm --op delete --tid=%(tid)s
 +"""
 diff -up nova-2011.3/nova/tests/test_volume.py.iscsi-choice nova-2011.3/nova/tests/test_volume.py
---- nova-2011.3/nova/tests/test_volume.py.iscsi-choice	2011-09-18 16:18:09.762267246 +0100
-+++ nova-2011.3/nova/tests/test_volume.py	2011-09-18 16:18:31.462605870 +0100
+--- nova-2011.3/nova/tests/test_volume.py.iscsi-choice	2011-09-22 14:33:36.800718837 +0100
++++ nova-2011.3/nova/tests/test_volume.py	2011-09-22 14:34:41.670487277 +0100
 @@ -270,8 +270,7 @@ class DriverTestCase(test.TestCase):
          def _fake_execute(_command, *_args, **_kwargs):
              """Fake _execute."""
@@ -166,17 +166,17 @@ diff -up nova-2011.3/nova/tests/test_volume.py.iscsi-choice nova-2011.3/nova/tes
          self.mox.ReplayAll()
          self.assertRaises(exception.ProcessExecutionError,
 diff -up nova-2011.3/nova/volume/driver.py.iscsi-choice nova-2011.3/nova/volume/driver.py
---- nova-2011.3/nova/volume/driver.py.iscsi-choice	2011-09-18 16:18:09.457262484 +0100
-+++ nova-2011.3/nova/volume/driver.py	2011-09-18 16:18:31.464605905 +0100
-@@ -27,6 +27,7 @@ from nova import exception
+--- nova-2011.3/nova/volume/driver.py.iscsi-choice	2011-09-22 14:33:36.711717783 +0100
++++ nova-2011.3/nova/volume/driver.py	2011-09-22 14:35:05.636771241 +0100
+@@ -28,6 +28,7 @@ from nova import exception
  from nova import flags
  from nova import log as logging
  from nova import utils
 +from nova.volume import iscsi
+ from nova.volume import volume_types
  
  
- LOG = logging.getLogger("nova.volume.driver")
-@@ -58,12 +59,13 @@ flags.DEFINE_string('rbd_pool', 'rbd',
+@@ -60,12 +61,13 @@ flags.DEFINE_string('rbd_pool', 'rbd',
  
  class VolumeDriver(object):
      """Executes commands relating to Volumes."""
@@ -193,7 +193,7 @@ diff -up nova-2011.3/nova/volume/driver.py.iscsi-choice nova-2011.3/nova/volume/
  
      def _try_execute(self, *command, **kwargs):
          # NOTE(vish): Volume commands can partially fail due to timing, but
-@@ -314,7 +316,6 @@ class FakeAOEDriver(AOEDriver):
+@@ -328,7 +330,6 @@ class FakeAOEDriver(AOEDriver):
  
      def __init__(self, *args, **kwargs):
          super(FakeAOEDriver, self).__init__(execute=self.fake_execute,
@@ -201,7 +201,7 @@ diff -up nova-2011.3/nova/volume/driver.py.iscsi-choice nova-2011.3/nova/volume/
                                              *args, **kwargs)
  
      def check_for_setup_error(self):
-@@ -342,6 +343,14 @@ class ISCSIDriver(VolumeDriver):
+@@ -356,6 +357,14 @@ class ISCSIDriver(VolumeDriver):
                         `CHAP` is the only auth_method in use at the moment.
      """
  
@@ -216,7 +216,7 @@ diff -up nova-2011.3/nova/volume/driver.py.iscsi-choice nova-2011.3/nova/volume/
      def ensure_export(self, context, volume):
          """Synchronously recreates an export for a logical volume."""
          try:
-@@ -354,19 +363,10 @@ class ISCSIDriver(VolumeDriver):
+@@ -368,19 +377,10 @@ class ISCSIDriver(VolumeDriver):
  
          iscsi_name = "%s%s" % (FLAGS.iscsi_target_prefix, volume['name'])
          volume_path = "/dev/%s/%s" % (FLAGS.volume_group, volume['name'])
@@ -240,7 +240,7 @@ diff -up nova-2011.3/nova/volume/driver.py.iscsi-choice nova-2011.3/nova/volume/
  
      def _ensure_iscsi_targets(self, context, host):
          """Ensure that target ids have been created in datastore."""
-@@ -386,13 +386,9 @@ class ISCSIDriver(VolumeDriver):
+@@ -400,13 +400,9 @@ class ISCSIDriver(VolumeDriver):
                                                        volume['host'])
          iscsi_name = "%s%s" % (FLAGS.iscsi_target_prefix, volume['name'])
          volume_path = "/dev/%s/%s" % (FLAGS.volume_group, volume['name'])
@@ -257,7 +257,7 @@ diff -up nova-2011.3/nova/volume/driver.py.iscsi-choice nova-2011.3/nova/volume/
  
      def remove_export(self, context, volume):
          """Removes an export for a logical volume."""
-@@ -407,18 +403,14 @@ class ISCSIDriver(VolumeDriver):
+@@ -421,18 +417,14 @@ class ISCSIDriver(VolumeDriver):
          try:
              # ietadm show will exit with an error
              # this export has already been removed
@@ -279,7 +279,7 @@ diff -up nova-2011.3/nova/volume/driver.py.iscsi-choice nova-2011.3/nova/volume/
  
      def _do_iscsi_discovery(self, volume):
          #TODO(justinsb): Deprecate discovery and use stored info
-@@ -569,8 +561,7 @@ class ISCSIDriver(VolumeDriver):
+@@ -583,8 +575,7 @@ class ISCSIDriver(VolumeDriver):
  
          tid = self.db.volume_get_iscsi_target_num(context, volume_id)
          try:
@@ -289,7 +289,7 @@ diff -up nova-2011.3/nova/volume/driver.py.iscsi-choice nova-2011.3/nova/volume/
          except exception.ProcessExecutionError, e:
              # Instances remount read-only in this case.
              # /etc/init.d/iscsitarget restart and rebooting nova-volume
-@@ -584,7 +575,6 @@ class FakeISCSIDriver(ISCSIDriver):
+@@ -598,7 +589,6 @@ class FakeISCSIDriver(ISCSIDriver):
      """Logs calls instead of executing."""
      def __init__(self, *args, **kwargs):
          super(FakeISCSIDriver, self).__init__(execute=self.fake_execute,
@@ -298,8 +298,8 @@ diff -up nova-2011.3/nova/volume/driver.py.iscsi-choice nova-2011.3/nova/volume/
  
      def check_for_setup_error(self):
 diff -up nova-2011.3/nova/volume/iscsi.py.iscsi-choice nova-2011.3/nova/volume/iscsi.py
---- nova-2011.3/nova/volume/iscsi.py.iscsi-choice	2011-09-18 16:18:31.465605922 +0100
-+++ nova-2011.3/nova/volume/iscsi.py	2011-09-18 16:18:31.466605939 +0100
+--- nova-2011.3/nova/volume/iscsi.py.iscsi-choice	2011-09-22 14:34:41.672487301 +0100
++++ nova-2011.3/nova/volume/iscsi.py	2011-09-22 14:34:41.672487301 +0100
 @@ -0,0 +1,156 @@
 +# vim: tabstop=4 shiftwidth=4 softtabstop=4
 +

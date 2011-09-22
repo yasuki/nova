@@ -1,0 +1,202 @@
+------------------------------------------------------------
+revno: 1530
+committer: Mark McLoughlin <markmc@redhat.com>
+branch nick: metadata-accept-rule
+timestamp: Sat 2011-09-17 08:02:26 +0100
+message:
+  Fix pep8 issue
+------------------------------------------------------------
+revno: 1529
+committer: Mark McLoughlin <markmc@redhat.com>
+branch nick: metadata-accept-rule
+timestamp: Sat 2011-09-17 07:39:40 +0100
+message:
+  Allow EC2 manager host param be set to default FLAGS.host
+------------------------------------------------------------
+revno: 1528
+committer: Mark McLoughlin <markmc@redhat.com>
+branch nick: metadata-accept-rule
+timestamp: Thu 2011-09-08 14:29:49 +0100
+message:
+  Have nova-api add the INPUT rule for EC2 metadata
+  
+  It makes no sense to have nova-network add an iptables rule for the EC2
+  metadata service, since they may not actually be on the same host.
+  
+  Instead, nova-api should add it directly. In order to do that, we add a
+  manager class for API services and allow the EC2 manager use the network
+  driver to add the rule.
+------------------------------------------------------------
+revno: 1527
+committer: Mark McLoughlin <markmc@redhat.com>
+branch nick: metadata-accept-rule
+timestamp: Mon 2011-09-05 07:10:52 +0100
+message:
+  Add INPUT chain rule for EC2 metadata requests
+  
+  On Fedora, the default policy for the INPUT chain in the filter table
+  is DROP. This means that EC2 metadata requests from guests get dropped.
+  
+  Add this rule to let it through:
+  
+  $> sudo iptables -t filter -A nova-network-INPUT \
+                   -s 0.0.0.0/0 -d $ec2_dmz_host \
+                   -m tcp -p tcp --dport $ec2_port -j ACCEPT
+  
+  However, this only works if nova-network and nova-api are on the same
+  host.
+
+diff -up nova-2011.3/nova/api/manager.py.metadata-accept nova-2011.3/nova/api/manager.py
+--- nova-2011.3/nova/api/manager.py.metadata-accept	2011-09-22 14:31:26.214172661 +0100
++++ nova-2011.3/nova/api/manager.py	2011-09-22 14:31:26.214172661 +0100
+@@ -0,0 +1,42 @@
++# vim: tabstop=4 shiftwidth=4 softtabstop=4
++
++# Copyright 2010 United States Government as represented by the
++# Administrator of the National Aeronautics and Space Administration.
++# All Rights Reserved.
++#
++#    Licensed under the Apache License, Version 2.0 (the "License"); you may
++#    not use this file except in compliance with the License. You may obtain
++#    a copy of the License at
++#
++#         http://www.apache.org/licenses/LICENSE-2.0
++#
++#    Unless required by applicable law or agreed to in writing, software
++#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
++#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
++#    License for the specific language governing permissions and limitations
++#    under the License.
++
++from nova import flags
++from nova import manager
++from nova import utils
++
++FLAGS = flags.FLAGS
++
++
++class EC2Manager(manager.Manager):
++    """EC2 API manager.
++
++    This class manages the EC2 API service initialization. Currently, it
++    just adds an iptables filter rule for the metadata service.
++    """
++    def __init__(self, *args, **kwargs):
++        super(EC2Manager, self).__init__(*args, **kwargs)
++        self.network_driver = utils.import_object(FLAGS.network_driver)
++
++    def init_host(self):
++        """Perform any initialization.
++
++        Currently, we only add an iptables filter rule for the metadta
++        service.
++        """
++        self.network_driver.metadata_accept()
+diff -up nova-2011.3/nova/flags.py.metadata-accept nova-2011.3/nova/flags.py
+--- nova-2011.3/nova/flags.py.metadata-accept	2011-09-22 13:02:23.000000000 +0100
++++ nova-2011.3/nova/flags.py	2011-09-22 14:31:26.214172661 +0100
+@@ -419,6 +419,9 @@ DEFINE_bool('resume_guests_state_on_host
+ DEFINE_string('root_helper', 'sudo',
+               'Command prefix to use for running commands as root')
+ 
++DEFINE_string('network_driver', 'nova.network.linux_net',
++              'Driver to use for network creation')
++
+ DEFINE_bool('use_ipv6', False, 'use ipv6')
+ 
+ DEFINE_bool('monkey_patch', False,
+diff -up nova-2011.3/nova/network/linux_net.py.metadata-accept nova-2011.3/nova/network/linux_net.py
+--- nova-2011.3/nova/network/linux_net.py.metadata-accept	2011-09-22 14:25:29.747957265 +0100
++++ nova-2011.3/nova/network/linux_net.py	2011-09-22 14:31:26.215172672 +0100
+@@ -388,6 +388,17 @@ def metadata_forward():
+     iptables_manager.apply()
+ 
+ 
++def metadata_accept():
++    """Create the filter accept rule for metadata."""
++    iptables_manager.ipv4['filter'].add_rule('INPUT',
++                                             '-s 0.0.0.0/0 -d %s '
++                                             '-p tcp -m tcp --dport %s '
++                                             '-j ACCEPT' % \
++                                             (FLAGS.ec2_dmz_host,
++                                              FLAGS.ec2_port))
++    iptables_manager.apply()
++
++
+ def init_host():
+     """Basic networking setup goes here."""
+     # NOTE(devcamcar): Cloud public SNAT entries and the default
+diff -up nova-2011.3/nova/network/manager.py.metadata-accept nova-2011.3/nova/network/manager.py
+--- nova-2011.3/nova/network/manager.py.metadata-accept	2011-09-22 13:02:23.000000000 +0100
++++ nova-2011.3/nova/network/manager.py	2011-09-22 14:31:26.216172684 +0100
+@@ -96,8 +96,6 @@ flags.DEFINE_string('fixed_range_v6', 'f
+ flags.DEFINE_string('gateway_v6', None, 'Default IPv6 gateway')
+ flags.DEFINE_integer('cnt_vpn_clients', 0,
+                      'Number of addresses reserved for vpn clients')
+-flags.DEFINE_string('network_driver', 'nova.network.linux_net',
+-                    'Driver to use for network creation')
+ flags.DEFINE_bool('update_dhcp_on_disassociate', False,
+                   'Whether to update dhcp when fixed_ip is disassociated')
+ flags.DEFINE_integer('fixed_ip_disassociate_timeout', 600,
+diff -up nova-2011.3/nova/service.py.metadata-accept nova-2011.3/nova/service.py
+--- nova-2011.3/nova/service.py.metadata-accept	2011-09-22 13:02:23.000000000 +0100
++++ nova-2011.3/nova/service.py	2011-09-22 14:31:26.217172696 +0100
+@@ -45,9 +45,13 @@ flags.DEFINE_integer('report_interval',
+ flags.DEFINE_integer('periodic_interval', 60,
+                      'seconds between running periodic tasks',
+                      lower_bound=1)
++flags.DEFINE_string('ec2_manager', 'nova.api.manager.EC2Manager',
++                    'EC2 API service manager')
+ flags.DEFINE_string('ec2_listen', "0.0.0.0",
+                     'IP address for EC2 API to listen')
+ flags.DEFINE_integer('ec2_listen_port', 8773, 'port for ec2 api to listen')
++flags.DEFINE_string('osapi_manager', None,
++                    'OpenStack API service manager')
+ flags.DEFINE_string('osapi_listen', "0.0.0.0",
+                     'IP address for OpenStack API to listen')
+ flags.DEFINE_integer('osapi_listen_port', 8774, 'port for os api to listen')
+@@ -290,6 +294,7 @@ class WSGIService(object):
+ 
+         """
+         self.name = name
++        self.manager = self._get_manager()
+         self.loader = loader or wsgi.Loader()
+         self.app = self.loader.load_app(name)
+         self.host = getattr(FLAGS, '%s_listen' % name, "0.0.0.0")
+@@ -299,6 +304,27 @@ class WSGIService(object):
+                                   host=self.host,
+                                   port=self.port)
+ 
++    def _get_manager(self):
++        """Initialize a Manager object appropriate for this service.
++
++        Use the service name to look up a Manager subclass from the
++        configuration and initialize an instance. If no class name
++        is configured, just return None.
++
++        :returns: a Manager instance, or None.
++
++        """
++        fl = '%s_manager' % self.name
++        if not fl in FLAGS:
++            return None
++
++        manager_class_name = FLAGS.get(fl, None)
++        if not manager_class_name:
++            return None
++
++        manager_class = utils.import_class(manager_class_name)
++        return manager_class()
++
+     def start(self):
+         """Start serving this service using loaded configuration.
+ 
+@@ -308,6 +334,8 @@ class WSGIService(object):
+         :returns: None
+ 
+         """
++        if self.manager:
++            self.manager.init_host()
+         self.server.start()
+         self.port = self.server.port
+ 
