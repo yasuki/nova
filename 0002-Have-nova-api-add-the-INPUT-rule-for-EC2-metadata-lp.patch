@@ -1,54 +1,31 @@
-------------------------------------------------------------
-revno: 1530
-committer: Mark McLoughlin <markmc@redhat.com>
-branch nick: metadata-accept-rule
-timestamp: Sat 2011-09-17 08:02:26 +0100
-message:
-  Fix pep8 issue
-------------------------------------------------------------
-revno: 1529
-committer: Mark McLoughlin <markmc@redhat.com>
-branch nick: metadata-accept-rule
-timestamp: Sat 2011-09-17 07:39:40 +0100
-message:
-  Allow EC2 manager host param be set to default FLAGS.host
-------------------------------------------------------------
-revno: 1528
-committer: Mark McLoughlin <markmc@redhat.com>
-branch nick: metadata-accept-rule
-timestamp: Thu 2011-09-08 14:29:49 +0100
-message:
-  Have nova-api add the INPUT rule for EC2 metadata
-  
-  It makes no sense to have nova-network add an iptables rule for the EC2
-  metadata service, since they may not actually be on the same host.
-  
-  Instead, nova-api should add it directly. In order to do that, we add a
-  manager class for API services and allow the EC2 manager use the network
-  driver to add the rule.
-------------------------------------------------------------
-revno: 1527
-committer: Mark McLoughlin <markmc@redhat.com>
-branch nick: metadata-accept-rule
-timestamp: Mon 2011-09-05 07:10:52 +0100
-message:
-  Add INPUT chain rule for EC2 metadata requests
-  
-  On Fedora, the default policy for the INPUT chain in the filter table
-  is DROP. This means that EC2 metadata requests from guests get dropped.
-  
-  Add this rule to let it through:
-  
-  $> sudo iptables -t filter -A nova-network-INPUT \
-                   -s 0.0.0.0/0 -d $ec2_dmz_host \
-                   -m tcp -p tcp --dport $ec2_port -j ACCEPT
-  
-  However, this only works if nova-network and nova-api are on the same
-  host.
+From fc3ff39ec83b17d3b489f1857cd11650687653b2 Mon Sep 17 00:00:00 2001
+From: Mark McLoughlin <markmc@redhat.com>
+Date: Thu, 8 Sep 2011 14:29:49 +0100
+Subject: [PATCH] Have nova-api add the INPUT rule for EC2 metadata
+ (lp:856385)
 
-diff -up nova-2011.3/nova/api/manager.py.metadata-accept nova-2011.3/nova/api/manager.py
---- nova-2011.3/nova/api/manager.py.metadata-accept	2011-09-22 14:31:26.214172661 +0100
-+++ nova-2011.3/nova/api/manager.py	2011-09-22 14:31:26.214172661 +0100
+It makes no sense to have nova-network add an iptables rule for the EC2
+metadata service, since they may not actually be on the same host.
+
+Instead, nova-api should add it directly. In order to do that, we add a
+manager class for API services and allow the EC2 manager use the network
+driver to add the rule.
+
+Change-Id: I7c1f973c662a6d290e555b6a2ce8fc301f27b543
+---
+ nova/api/manager.py       |   42 ++++++++++++++++++++++++++++++++++++++++++
+ nova/flags.py             |    3 +++
+ nova/network/linux_net.py |   11 +++++++++--
+ nova/network/manager.py   |    2 --
+ nova/service.py           |   28 ++++++++++++++++++++++++++++
+ 5 files changed, 82 insertions(+), 4 deletions(-)
+ create mode 100644 nova/api/manager.py
+
+diff --git a/nova/api/manager.py b/nova/api/manager.py
+new file mode 100644
+index 0000000..b3fcf93
+--- /dev/null
++++ b/nova/api/manager.py
 @@ -0,0 +1,42 @@
 +# vim: tabstop=4 shiftwidth=4 softtabstop=4
 +
@@ -92,10 +69,11 @@ diff -up nova-2011.3/nova/api/manager.py.metadata-accept nova-2011.3/nova/api/ma
 +        service.
 +        """
 +        self.network_driver.metadata_accept()
-diff -up nova-2011.3/nova/flags.py.metadata-accept nova-2011.3/nova/flags.py
---- nova-2011.3/nova/flags.py.metadata-accept	2011-09-22 13:02:23.000000000 +0100
-+++ nova-2011.3/nova/flags.py	2011-09-22 14:31:26.214172661 +0100
-@@ -419,6 +419,9 @@ DEFINE_bool('resume_guests_state_on_host
+diff --git a/nova/flags.py b/nova/flags.py
+index aa76def..d21cf2e 100644
+--- a/nova/flags.py
++++ b/nova/flags.py
+@@ -419,6 +419,9 @@ DEFINE_bool('resume_guests_state_on_host_boot', False,
  DEFINE_string('root_helper', 'sudo',
                'Command prefix to use for running commands as root')
  
@@ -105,31 +83,35 @@ diff -up nova-2011.3/nova/flags.py.metadata-accept nova-2011.3/nova/flags.py
  DEFINE_bool('use_ipv6', False, 'use ipv6')
  
  DEFINE_bool('monkey_patch', False,
-diff -up nova-2011.3/nova/network/linux_net.py.metadata-accept nova-2011.3/nova/network/linux_net.py
---- nova-2011.3/nova/network/linux_net.py.metadata-accept	2011-09-22 14:25:29.747957265 +0100
-+++ nova-2011.3/nova/network/linux_net.py	2011-09-22 14:31:26.215172672 +0100
-@@ -388,6 +388,17 @@ def metadata_forward():
-     iptables_manager.apply()
- 
- 
+diff --git a/nova/network/linux_net.py b/nova/network/linux_net.py
+index 6503537..09cdd74 100755
+--- a/nova/network/linux_net.py
++++ b/nova/network/linux_net.py
+@@ -381,10 +381,17 @@ def metadata_forward():
+                                           '-p tcp -m tcp --dport 80 -j DNAT '
+                                           '--to-destination %s:%s' % \
+                                           (FLAGS.ec2_dmz_host, FLAGS.ec2_port))
++    iptables_manager.apply()
++
++
 +def metadata_accept():
 +    """Create the filter accept rule for metadata."""
-+    iptables_manager.ipv4['filter'].add_rule('INPUT',
-+                                             '-s 0.0.0.0/0 -d %s '
+     iptables_manager.ipv4['filter'].add_rule('INPUT',
+                                              '-s 0.0.0.0/0 -d %s '
+-                                             '-p tcp -m tcp --dport %s -j ACCEPT' % \
+-                                             (FLAGS.ec2_dmz_host, FLAGS.ec2_port))
 +                                             '-p tcp -m tcp --dport %s '
 +                                             '-j ACCEPT' % \
 +                                             (FLAGS.ec2_dmz_host,
 +                                              FLAGS.ec2_port))
-+    iptables_manager.apply()
-+
-+
- def init_host():
-     """Basic networking setup goes here."""
-     # NOTE(devcamcar): Cloud public SNAT entries and the default
-diff -up nova-2011.3/nova/network/manager.py.metadata-accept nova-2011.3/nova/network/manager.py
---- nova-2011.3/nova/network/manager.py.metadata-accept	2011-09-22 13:02:23.000000000 +0100
-+++ nova-2011.3/nova/network/manager.py	2011-09-22 14:31:26.216172684 +0100
-@@ -96,8 +96,6 @@ flags.DEFINE_string('fixed_range_v6', 'f
+     iptables_manager.apply()
+ 
+ 
+diff --git a/nova/network/manager.py b/nova/network/manager.py
+index 5c2bc60..90b47b9 100644
+--- a/nova/network/manager.py
++++ b/nova/network/manager.py
+@@ -96,8 +96,6 @@ flags.DEFINE_string('fixed_range_v6', 'fd00::/48', 'Fixed IPv6 address block')
  flags.DEFINE_string('gateway_v6', None, 'Default IPv6 gateway')
  flags.DEFINE_integer('cnt_vpn_clients', 0,
                       'Number of addresses reserved for vpn clients')
@@ -138,10 +120,11 @@ diff -up nova-2011.3/nova/network/manager.py.metadata-accept nova-2011.3/nova/ne
  flags.DEFINE_bool('update_dhcp_on_disassociate', False,
                    'Whether to update dhcp when fixed_ip is disassociated')
  flags.DEFINE_integer('fixed_ip_disassociate_timeout', 600,
-diff -up nova-2011.3/nova/service.py.metadata-accept nova-2011.3/nova/service.py
---- nova-2011.3/nova/service.py.metadata-accept	2011-09-22 13:02:23.000000000 +0100
-+++ nova-2011.3/nova/service.py	2011-09-22 14:31:26.217172696 +0100
-@@ -45,9 +45,13 @@ flags.DEFINE_integer('report_interval',
+diff --git a/nova/service.py b/nova/service.py
+index 247eb4f..b9ad579 100644
+--- a/nova/service.py
++++ b/nova/service.py
+@@ -45,9 +45,13 @@ flags.DEFINE_integer('report_interval', 10,
  flags.DEFINE_integer('periodic_interval', 60,
                       'seconds between running periodic tasks',
                       lower_bound=1)
@@ -200,3 +183,6 @@ diff -up nova-2011.3/nova/service.py.metadata-accept nova-2011.3/nova/service.py
          self.server.start()
          self.port = self.server.port
  
+-- 
+1.7.6.2
+

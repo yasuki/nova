@@ -4,7 +4,7 @@
 
 Name:             openstack-nova
 Version:          2011.3
-Release:          1%{?dist}
+Release:          2%{?dist}
 Summary:          OpenStack Compute (nova)
 
 Group:            Applications/System
@@ -28,8 +28,14 @@ Source20:         nova-sudoers
 Source21:         nova-polkit.pkla
 Source22:         nova-ifc-template
 
-Patch1:           nova-metadata-accept.patch
-Patch2:           nova-iscsi-choice.patch
+#
+# Patches managed here: https://github.com/markmc/nova/tree/fedora-patches
+#
+Patch1:           0001-Add-INPUT-chain-rule-for-EC2-metadata-requests-lp-85.patch
+Patch2:           0002-Have-nova-api-add-the-INPUT-rule-for-EC2-metadata-lp.patch
+Patch3:           0003-Allow-the-user-to-choose-either-ietadm-or-tgtadm-lp-.patch
+Patch4:           0004-Remove-VolumeDriver.sync_exec-method-lp-819997.patch
+Patch5:           0005-Refactor-ietadm-tgtadm-calls-out-into-helper-classes.patch
 
 BuildArch:        noarch
 BuildRequires:    intltool
@@ -158,6 +164,9 @@ This package contains documentation files for nova.
 
 %patch1 -p1
 %patch2 -p1
+%patch3 -p1
+%patch4 -p1
+%patch5 -p1
 
 find . \( -name .gitignore -o -name .placeholder \) -delete
 
@@ -345,6 +354,9 @@ fi
 %endif
 
 %changelog
+* Mon Sep 26 2011 Mark McLoughlin <markmc@redhat.com> - 2011.3-2
+- Manage the package's patches in git; no functional changes.
+
 * Thu Sep 22 2011 Mark McLoughlin <markmc@redhat.com> - 2011.3-1
 - Update to Diablo final.
 - Drop some upstreamed patches.
