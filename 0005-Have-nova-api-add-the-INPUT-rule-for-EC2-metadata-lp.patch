@@ -1,4 +1,4 @@
-From fc3ff39ec83b17d3b489f1857cd11650687653b2 Mon Sep 17 00:00:00 2001
+From 491261a15148092fce67feb8bb484e2d8a9d2a75 Mon Sep 17 00:00:00 2001
 From: Mark McLoughlin <markmc@redhat.com>
 Date: Thu, 8 Sep 2011 14:29:49 +0100
 Subject: [PATCH] Have nova-api add the INPUT rule for EC2 metadata
@@ -70,10 +70,10 @@ index 0000000..b3fcf93
 +        """
 +        self.network_driver.metadata_accept()
 diff --git a/nova/flags.py b/nova/flags.py
-index aa76def..d21cf2e 100644
+index 0a87148..432d483 100644
 --- a/nova/flags.py
 +++ b/nova/flags.py
-@@ -419,6 +419,9 @@ DEFINE_bool('resume_guests_state_on_host_boot', False,
+@@ -413,6 +413,9 @@ DEFINE_bool('resume_guests_state_on_host_boot', False,
  DEFINE_string('root_helper', 'sudo',
                'Command prefix to use for running commands as root')
  
@@ -84,7 +84,7 @@ index aa76def..d21cf2e 100644
  
  DEFINE_bool('monkey_patch', False,
 diff --git a/nova/network/linux_net.py b/nova/network/linux_net.py
-index 6503537..09cdd74 100755
+index 0482d4e..f1e9adf 100755
 --- a/nova/network/linux_net.py
 +++ b/nova/network/linux_net.py
 @@ -381,10 +381,17 @@ def metadata_forward():
@@ -184,5 +184,5 @@ index 247eb4f..b9ad579 100644
          self.port = self.server.port
  
 -- 
-1.7.6.2
+1.7.6.4
 

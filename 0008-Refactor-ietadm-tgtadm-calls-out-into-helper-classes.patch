@@ -1,4 +1,4 @@
-From 373aaba8b7f478c22eba082073073b68509506a6 Mon Sep 17 00:00:00 2001
+From c82a027f2993965f5d14be048ce8c4b56a76b468 Mon Sep 17 00:00:00 2001
 From: Mark McLoughlin <markmc@redhat.com>
 Date: Sun, 18 Sep 2011 16:02:43 +0100
 Subject: [PATCH] Refactor ietadm/tgtadm calls out into helper classes
@@ -19,10 +19,10 @@ Change-Id: I1c0064e5d35483a6c4059cfc61a484f5f576b2da
  create mode 100644 nova/volume/iscsi.py
 
 diff --git a/nova/flags.py b/nova/flags.py
-index a1981c8..d21cf2e 100644
+index 4c71dd3..432d483 100644
 --- a/nova/flags.py
 +++ b/nova/flags.py
-@@ -422,9 +422,6 @@ DEFINE_string('root_helper', 'sudo',
+@@ -416,9 +416,6 @@ DEFINE_string('root_helper', 'sudo',
  DEFINE_string('network_driver', 'nova.network.linux_net',
                'Driver to use for network creation')
  
@@ -557,5 +557,5 @@ index 0000000..d50dd5f
 +    else:
 +        return IetAdm()
 -- 
-1.7.6.2
+1.7.6.4
 

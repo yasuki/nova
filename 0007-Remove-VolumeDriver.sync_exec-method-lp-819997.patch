@@ -1,4 +1,4 @@
-From 74ca6aa85efc3102a5267733c288bce6d96ee2d8 Mon Sep 17 00:00:00 2001
+From ee5eacc0e268dc72d00f21685197f2fc734fc738 Mon Sep 17 00:00:00 2001
 From: Mark McLoughlin <markmc@redhat.com>
 Date: Sun, 18 Sep 2011 12:04:46 +0100
 Subject: [PATCH] Remove VolumeDriver.sync_exec method (lp:819997)
@@ -232,5 +232,5 @@ index 76f0655..8468602 100644
              LOG.debug(_("Failed to retrieve QoS info"))
              return {}
 -- 
-1.7.6.2
+1.7.6.4
 

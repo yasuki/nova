@@ -1,4 +1,4 @@
-From 947593b55d3f1272350be2fcf53ba4b93624299c Mon Sep 17 00:00:00 2001
+From ed1aff808be28ed79773ed269b0096c4a48464ef Mon Sep 17 00:00:00 2001
 From: Mark McLoughlin <markmc@redhat.com>
 Date: Thu, 11 Aug 2011 07:44:38 -0400
 Subject: [PATCH] Allow the user to choose either ietadm or tgtadm (lp:819997)
@@ -14,10 +14,10 @@ Change-Id: Ia350345a25a5f39b8aa26c8daf2a9987590d4b62
  3 files changed, 111 insertions(+), 34 deletions(-)
 
 diff --git a/nova/flags.py b/nova/flags.py
-index d21cf2e..a1981c8 100644
+index 432d483..4c71dd3 100644
 --- a/nova/flags.py
 +++ b/nova/flags.py
-@@ -422,6 +422,9 @@ DEFINE_string('root_helper', 'sudo',
+@@ -416,6 +416,9 @@ DEFINE_string('root_helper', 'sudo',
  DEFINE_string('network_driver', 'nova.network.linux_net',
                'Driver to use for network creation')
  
@@ -232,5 +232,5 @@ index e5bb498..76f0655 100644
              # Instances remount read-only in this case.
              # /etc/init.d/iscsitarget restart and rebooting nova-volume
 -- 
-1.7.6.2
+1.7.6.4
 

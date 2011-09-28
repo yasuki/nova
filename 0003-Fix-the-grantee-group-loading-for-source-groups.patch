@@ -1,0 +1,36 @@
+From f558a865a4b3d67a6d1e33b888de79daf5ff2021 Mon Sep 17 00:00:00 2001
+From: Vishvananda Ishaya <vishvananda@gmail.com>
+Date: Mon, 26 Sep 2011 08:34:14 -0700
+Subject: [PATCH] Fix the grantee group loading for source groups
+
+Fixes bug 859679.
+
+Change-Id: Ia0b90b8373a02955f23b6dda0495f01511762822
+---
+ nova/db/sqlalchemy/api.py |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/nova/db/sqlalchemy/api.py b/nova/db/sqlalchemy/api.py
+index 3226999..6cc678a 100644
+--- a/nova/db/sqlalchemy/api.py
++++ b/nova/db/sqlalchemy/api.py
+@@ -2828,14 +2828,13 @@ def security_group_rule_get_by_security_group(context, security_group_id,
+         result = session.query(models.SecurityGroupIngressRule).\
+                          filter_by(deleted=can_read_deleted(context)).\
+                          filter_by(parent_group_id=security_group_id).\
+-                         options(joinedload_all('grantee_group')).\
++                         options(joinedload_all('grantee_group.instances')).\
+                          all()
+     else:
+-        # TODO(vish): Join to group and check for project_id
+         result = session.query(models.SecurityGroupIngressRule).\
+                          filter_by(deleted=False).\
+                          filter_by(parent_group_id=security_group_id).\
+-                         options(joinedload_all('grantee_group')).\
++                         options(joinedload_all('grantee_group.instances')).\
+                          all()
+     return result
+ 
+-- 
+1.7.6.4
+

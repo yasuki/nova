@@ -4,7 +4,7 @@
 
 Name:             openstack-nova
 Version:          2011.3
-Release:          2%{?dist}
+Release:          3%{?dist}
 Summary:          OpenStack Compute (nova)
 
 Group:            Applications/System
@@ -31,11 +31,14 @@ Source22:         nova-ifc-template
 #
 # Patches managed here: https://github.com/markmc/nova/tree/fedora-patches
 #
-Patch1:           0001-Add-INPUT-chain-rule-for-EC2-metadata-requests-lp-85.patch
-Patch2:           0002-Have-nova-api-add-the-INPUT-rule-for-EC2-metadata-lp.patch
-Patch3:           0003-Allow-the-user-to-choose-either-ietadm-or-tgtadm-lp-.patch
-Patch4:           0004-Remove-VolumeDriver.sync_exec-method-lp-819997.patch
-Patch5:           0005-Refactor-ietadm-tgtadm-calls-out-into-helper-classes.patch
+Patch1:           0001-Removed-db_pool-complexities-from-nova.db.sqlalchemy.patch
+Patch2:           0002-Makes-sure-to-recreate-gateway-for-moved-ip.patch
+Patch3:           0003-Fix-the-grantee-group-loading-for-source-groups.patch
+Patch4:           0004-Add-INPUT-chain-rule-for-EC2-metadata-requests-lp-85.patch
+Patch5:           0005-Have-nova-api-add-the-INPUT-rule-for-EC2-metadata-lp.patch
+Patch6:           0006-Allow-the-user-to-choose-either-ietadm-or-tgtadm-lp-.patch
+Patch7:           0007-Remove-VolumeDriver.sync_exec-method-lp-819997.patch
+Patch8:           0008-Refactor-ietadm-tgtadm-calls-out-into-helper-classes.patch
 
 BuildArch:        noarch
 BuildRequires:    intltool
@@ -167,6 +170,9 @@ This package contains documentation files for nova.
 %patch3 -p1
 %patch4 -p1
 %patch5 -p1
+%patch6 -p1
+%patch7 -p1
+%patch8 -p1
 
 find . \( -name .gitignore -o -name .placeholder \) -delete
 
@@ -354,6 +360,11 @@ fi
 %endif
 
 %changelog
+* Wed Sep 28 2011 Mark McLoughlin <markmc@redhat.com> - 2011.3-3
+- Fix lazy load exception with security groups (#741307)
+- Fix issue with nova-network deleting the default route (#741686)
+- Fix errors caused by MySQL connection pooling (#741312)
+
 * Mon Sep 26 2011 Mark McLoughlin <markmc@redhat.com> - 2011.3-2
 - Manage the package's patches in git; no functional changes.
 

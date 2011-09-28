@@ -1,4 +1,4 @@
-From ae7d3a76e0b22c829d8b8d7c1fd270f71ad36b76 Mon Sep 17 00:00:00 2001
+From 8666ba16b84efa4ef7d393faaecbfcd8d5e3015a Mon Sep 17 00:00:00 2001
 From: Mark McLoughlin <markmc@redhat.com>
 Date: Mon, 5 Sep 2011 07:10:52 +0100
 Subject: [PATCH] Add INPUT chain rule for EC2 metadata requests (lp:856385)
@@ -21,7 +21,7 @@ Change-Id: Ic99ba9249ce5219cd2631184154add82d25d9d6d
  1 files changed, 4 insertions(+), 0 deletions(-)
 
 diff --git a/nova/network/linux_net.py b/nova/network/linux_net.py
-index 712db32..6503537 100755
+index ac52c16..0482d4e 100755
 --- a/nova/network/linux_net.py
 +++ b/nova/network/linux_net.py
 @@ -381,6 +381,10 @@ def metadata_forward():
@@ -36,5 +36,5 @@ index 712db32..6503537 100755
  
  
 -- 
-1.7.6.2
+1.7.6.4
 
