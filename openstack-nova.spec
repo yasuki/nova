@@ -4,7 +4,7 @@
 
 Name:             openstack-nova
 Version:          2011.3
-Release:          3%{?dist}
+Release:          4%{?dist}
 Summary:          OpenStack Compute (nova)
 
 Group:            Applications/System
@@ -92,6 +92,7 @@ Requires:         python-anyjson
 Requires:         python-IPy
 Requires:         python-boto
 Requires:         python-kombu
+Requires:         python-amqplib
 Requires:         python-daemon
 Requires:         python-eventlet
 Requires:         python-greenlet
@@ -360,6 +361,9 @@ fi
 %endif
 
 %changelog
+* Mon Oct 17 2011 Bob Kukura <rkukura@redhat.com> - 2011.3-4
+- Add dependency on python-amqplib (#746685)
+
 * Wed Sep 28 2011 Mark McLoughlin <markmc@redhat.com> - 2011.3-3
 - Fix lazy load exception with security groups (#741307)
 - Fix issue with nova-network deleting the default route (#741686)
