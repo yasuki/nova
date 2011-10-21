@@ -4,7 +4,7 @@
 
 Name:             openstack-nova
 Version:          2011.3
-Release:          4%{?dist}
+Release:          5%{?dist}
 Summary:          OpenStack Compute (nova)
 
 Group:            Applications/System
@@ -135,7 +135,7 @@ Group:            Documentation
 
 Requires:         %{name} = %{version}-%{release}
 
-BuildRequires:    python-sphinx
+BuildRequires:    python-sphinx10
 BuildRequires:    graphviz
 BuildRequires:    python-distutils-extra
 
@@ -189,12 +189,12 @@ export PYTHONPATH="$( pwd ):$PYTHONPATH"
 pushd doc
 # Manually auto-generate to work around sphinx-build segfault
 ./generate_autodoc_index.sh
-SPHINX_DEBUG=1 sphinx-build -b man source build/man
+SPHINX_DEBUG=1 sphinx-1.0-build -b man source build/man
 mkdir -p %{buildroot}%{_mandir}/man1
 install -p -D -m 644 build/man/*.1 %{buildroot}%{_mandir}/man1/
 
 %if 0%{?with_doc}
-SPHINX_DEBUG=1 sphinx-build -b html source build/html
+SPHINX_DEBUG=1 sphinx-1.0-build -b html source build/html
 # Fix hidden-file-or-dir warnings
 rm -fr build/html/.doctrees build/html/.buildinfo
 %endif
@@ -358,6 +358,11 @@ fi
 %endif
 
 %changelog
+
+* Fri Oct 21 2011 David Busby <oneiroi@fedoraproject.org> 2011.3-5
+- Changed requirement from python-sphinx, to python-sphinx10
+- Switch back to SysV init for el6
+
 * Mon Oct 17 2011 Bob Kukura <rkukura@redhat.com> - 2011.3-4
 - Add dependency on python-amqplib (#746685)
 
