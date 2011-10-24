@@ -1,10 +1,8 @@
 %global with_doc %{!?_without_doc:1}%{?_without_doc:0}
 
-%global milestone d4
-
 Name:             openstack-nova
 Version:          2011.3
-Release:          4%{?dist}
+Release:          5%{?dist}
 Summary:          OpenStack Compute (nova)
 
 Group:            Applications/System
@@ -39,6 +37,7 @@ Patch5:           0005-Have-nova-api-add-the-INPUT-rule-for-EC2-metadata-lp.patc
 Patch6:           0006-Allow-the-user-to-choose-either-ietadm-or-tgtadm-lp-.patch
 Patch7:           0007-Remove-VolumeDriver.sync_exec-method-lp-819997.patch
 Patch8:           0008-Refactor-ietadm-tgtadm-calls-out-into-helper-classes.patch
+Patch9:           0009-Fixed-bug-lp850602.patch
 
 BuildArch:        noarch
 BuildRequires:    intltool
@@ -174,6 +173,7 @@ This package contains documentation files for nova.
 %patch6 -p1
 %patch7 -p1
 %patch8 -p1
+%patch9 -p1
 
 find . \( -name .gitignore -o -name .placeholder \) -delete
 
@@ -361,6 +361,9 @@ fi
 %endif
 
 %changelog
+* Mon Oct 24 2011 Mark McLoughlin <markmc@redhat.com> - 2011.3-5
+- Fix block migration (#741690)
+
 * Mon Oct 17 2011 Bob Kukura <rkukura@redhat.com> - 2011.3-4
 - Add dependency on python-amqplib (#746685)
 
