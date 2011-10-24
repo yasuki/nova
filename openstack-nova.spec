@@ -358,7 +358,6 @@ fi
 %endif
 
 %changelog
-
 * Fri Oct 21 2011 David Busby <oneiroi@fedoraproject.org> 2011.3-5
 - Changed requirement from python-sphinx, to python-sphinx10
 - Switch back to SysV init for el6
