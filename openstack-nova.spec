@@ -1,7 +1,5 @@
 %global with_doc %{!?_without_doc:1}%{?_without_doc:0}
 
-%global milestone d4
-
 Name:             openstack-nova
 Version:          2011.3
 Release:          5%{?dist}
