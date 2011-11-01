@@ -841,7 +841,7 @@ class NetworkManager(manager.SchedulerDependentManager):
         ips = []
         for index in range(num_ips):
             address = str(project_net[index])
-            if index < bottom_reserved or num_ips - index < top_reserved:
+            if index < bottom_reserved or num_ips - index <= top_reserved:
                 reserved = True
             else:
                 reserved = False
