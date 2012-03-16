@@ -1346,6 +1346,18 @@ def logging_error(message):
             LOG.exception(message)
 
 
+@contextlib.contextmanager
+def remove_path_on_error(path):
+    """Protect code that wants to operate on PATH atomically.
+    Any exception will cause PATH to be removed.
+    """
+    try:
+        yield
+    except Exception:
+        with save_and_reraise_exception():
+            delete_if_exists(path)
+
+
 def make_dev_path(dev, partition=None, base='/dev'):
     """Return a path to a particular device.
 
