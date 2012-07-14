@@ -71,4 +71,4 @@ _dev = re.compile('^/dev/')
 
 def strip_dev(device_name):
     """remove leading '/dev/'"""
-    return _dev.sub('', device_name)
+    return _dev.sub('', device_name) if device_name else device_name
