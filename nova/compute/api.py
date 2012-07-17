@@ -1687,6 +1687,20 @@ class API(BaseAPI):
         uuids = [instance['uuid'] for instance in instances]
         return self.db.instance_fault_get_by_instance_uuids(context, uuids)
 
+    def get_instance_bdms(self, context, instance):
+        """Get all bdm tables for specified instance."""
+        return self.db.block_device_mapping_get_all_by_instance(context,
+                instance['id'])
+
+    def is_volume_backed_instance(self, context, instance, bdms):
+        bdms = bdms or self.get_instance_bdms(context, instance)
+        for bdm in bdms:
+            if (block_device.strip_dev(bdm.device_name) ==
+                block_device.strip_dev(instance['root_device_name'])):
+                return True
+        else:
+            return False
+
 
 class HostAPI(BaseAPI):
     """Sub-set of the Compute Manager API for managing host operations."""
