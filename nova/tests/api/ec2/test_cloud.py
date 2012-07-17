@@ -40,6 +40,7 @@ from nova import log as logging
 from nova import rpc
 from nova import test
 from nova import utils
+from nova.virt import driver
 
 
 LOG = logging.getLogger(__name__)
@@ -2051,7 +2052,7 @@ class CloudTestCase(test.TestCase):
 
         db.volume_destroy(self.context, vol['id'])
 
-    def test_create_image(self):
+    def _do_test_create_image(self, no_reboot):
         """Make sure that CreateImage works"""
         # enforce periodic tasks run in short time to avoid wait for 60s.
         self._restart_compute_service(periodic_interval=0.3)
@@ -2103,8 +2104,20 @@ class CloudTestCase(test.TestCase):
         self.stubs.Set(db, 'block_device_mapping_get_all_by_instance',
                        fake_block_device_mapping_get_all_by_instance)
 
+        virt_driver = {}
+
+        def fake_power_on(self, instance):
+            virt_driver['powered_on'] = True
+
+        self.stubs.Set(driver.ComputeDriver, 'power_on', fake_power_on)
+
+        def fake_power_off(self, instance):
+            virt_driver['powered_off'] = True
+
+        self.stubs.Set(driver.ComputeDriver, 'power_off', fake_power_off)
+
         result = self.cloud.create_image(self.context, ec2_instance_id,
-                                         no_reboot=True)
+                                         no_reboot=no_reboot)
         ec2_ids = [result['imageId']]
         created_image = self.cloud.describe_images(self.context,
                                                    ec2_ids)['imagesSet'][0]
@@ -2118,6 +2131,8 @@ class CloudTestCase(test.TestCase):
         self.assertEquals(created_image.get('kernelId'), 'aki-00000001')
         self.assertEquals(created_image.get('ramdiskId'), 'ari-00000002')
         self.assertEquals(created_image.get('rootDeviceType'), 'ebs')
+        self.assertNotEqual(virt_driver.get('powered_on'), no_reboot)
+        self.assertNotEqual(virt_driver.get('powered_off'), no_reboot)
 
         self.cloud.terminate_instances(self.context, [ec2_instance_id])
         for vol in volumes:
@@ -2127,6 +2142,14 @@ class CloudTestCase(test.TestCase):
         # TODO(yamahata): clean up snapshot created by CreateImage.
 
         self._restart_compute_service()
+
+    def test_create_image_no_reboot(self):
+        """Make sure that CreateImage works"""
+        self._do_test_create_image(True)
+
+    def test_create_image_with_reboot(self):
+        """Make sure that CreateImage works"""
+        self._do_test_create_image(False)
 
     def test_create_image_instance_store(self):
         """
