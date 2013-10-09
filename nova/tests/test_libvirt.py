@@ -4749,7 +4749,7 @@ disk size: 4.4M''', ''))
     def _do_test_extract_snapshot(self, dest_format='raw', out_format='raw'):
         self.mox.StubOutWithMock(utils, 'execute')
         utils.execute('qemu-img', 'convert', '-f', 'qcow2', '-O', out_format,
-                      '-s', 'snap1', '/path/to/disk/image', '/extracted/snap')
+                      '/path/to/disk/image', '/extracted/snap')
 
         # Start test
         self.mox.ReplayAll()

@@ -505,8 +505,8 @@ def extract_snapshot(disk_path, source_fmt, snapshot_name, out_path, dest_fmt):
 
     # When snapshot name is omitted we do a basic convert, which
     # is used by live snapshots.
-    if snapshot_name is not None:
-        qemu_img_cmd += ('-s', snapshot_name)
+    # if snapshot_name is not None:
+    #     qemu_img_cmd += ('-s', snapshot_name)
 
     qemu_img_cmd += (disk_path, out_path)
     execute(*qemu_img_cmd)
